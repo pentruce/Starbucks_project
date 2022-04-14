@@ -1,0 +1,212 @@
+#Crawling s.code
+
+package Main;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+public class Crawling {
+
+	public static final String WEB_DRIVER_ID = "webdriver.chrome.driver";
+	public static final String WEB_DRIVER_PATH = "C:\\Users\\user\\eclipse-workspace\\StarBucksProject\\chromedriver\\chromedriver.exe";
+	public int time = 0;
+	public String distance = "";
+	public List<String> mData = new ArrayList<>();
+
+	public List<String> CrawlingData(Data a) throws InterruptedException {
+		System.out.println("Check the travel time and distance to nearby Starbucks.");
+		String[] tempArray = a.fullData.toArray(new String[a.fullData.size()]);
+		String checkdata = "";
+		System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
+		ChromeOptions chromeOptions = new ChromeOptions();
+	//	chromeOptions.addArguments("--headless");
+	//	chromeOptions.addArguments("--no-sandbox");
+		WebDriver driver = new ChromeDriver(chromeOptions);
+		driver.get("https://map.naver.com/v5/directions/-/-/-/walk?c=14149994.2444581,4493108.5003507,14,0,0,0,dh");
+		sleep(2000);
+		for (int i = 0; i < a.listAddress.size(); i++) {
+			System.out.println("data crawling ...( " + (i + 1) + "/" + a.listAddress.size() + " )");
+			if (i > 0 && a.listAddress.get(i).equals(a.listAddress.get(i - 1))) {
+				tempArray[i] = tempArray[i] + "," + Integer.toString(time) + "," + distance;
+				System.out.println(tempArray[i]);
+				mData.add(tempArray[i]);
+			} else {
+					driver.findElement(By.xpath(
+							"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/div[1]/directions-search/div[1]/directions-search-box[1]/div/div/div[1]/input"))
+							.click();
+					driver.findElement(By.xpath(
+							"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/div[1]/directions-search/div[1]/directions-search-box[1]/div/div/div[1]/input"))
+							.sendKeys(a.listAddress.get(i) + "\n");
+					sleep(1500);
+					
+					driver.findElement(By.xpath(
+							"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/div[1]/directions-search/div[1]/directions-search-box[2]/div/div/div[1]/input"))
+							.click();
+					driver.findElement(By.xpath(
+							"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/div[1]/directions-search/div[1]/directions-search-box[2]/div/div/div[1]/input"))
+							.sendKeys("스타벅스\n");
+					sleep(1500);
+
+				driver.findElement(By.xpath(
+						"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/div/directions-search/div[2]/button[3]"))
+						.click();
+				sleep(1500);
+				try {
+					String time1 = driver.findElement(By.xpath(
+							"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/directions-summary-list/directions-hover-scroll/div/ul/li/directions-summary-item-walking/div[1]/strong/readable-duration/span[1]"))
+							.getText();
+					String unit1 = driver.findElement(By.xpath(
+							"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/directions-summary-list/directions-hover-scroll/div/ul/li/directions-summary-item-walking/div[1]/strong/readable-duration/span[2]"))
+							.getText();
+					if (unit1.equals("시간")) {
+						String time2 = driver.findElement(By.xpath(
+								"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/directions-summary-list/directions-hover-scroll/div/ul/li/directions-summary-item-walking/div[1]/strong/readable-duration/span[3]"))
+								.getText();
+						String unit2 = driver.findElement(By.xpath(
+								"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/directions-summary-list/directions-hover-scroll/div/ul/li/directions-summary-item-walking/div[1]/strong/readable-duration/span[4]"))
+								.getText();
+						time = Integer.parseInt(time1) * 60 + Integer.parseInt(time2);
+					} else {
+						time = Integer.parseInt(time1);
+					}
+					distance = driver.findElement(By.xpath(
+							"/html/body/app/layout/div[3]/div[2]/shrinkable-layout/div/directions-layout/directions-result/div[1]/directions-summary-list/directions-hover-scroll/div/ul/li/directions-summary-item-walking/div[1]/span[2]/readable-distance"))
+							.getText();
+					if (distance.contains("km")) {
+						distance = distance.substring(0, distance.length() - 2);
+						int tempDistance = (int) (Double.parseDouble(distance) * 1000);
+						distance = Integer.toString(tempDistance);
+					} else {
+						distance = distance.substring(0, distance.length() - 1);
+					}
+					tempArray[i] = tempArray[i] + "," + Integer.toString(time) + "," + distance;
+					System.out.println(tempArray[i]);
+					mData.add(tempArray[i]);
+					sleep(1500);	
+				} catch(org.openqa.selenium.NoSuchElementException e) {
+					System.out.println("시간, 거리 정보 없음.");
+					continue;
+				}
+			}
+
+		}
+		System.out.println("Travel distance and time have been checked.");
+		return mData;
+	}
+
+	public void sleep(long num) {
+		try {
+			Thread.sleep(num);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}
+
+#######################################################################################################################################################################
+
+#data s.code
+
+package Main;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Data {
+	public String index = "";
+	public List<String> listAddress = new ArrayList<>();
+	public List<String> fullData = new ArrayList<>();
+
+	public void ReadData() throws IOException {
+		File dir = new File("C:\\Users\\user\\eclipse-workspace\\StarBucksProject\\csvdata");
+		File files[] = dir.listFiles();
+		for (int i = 0; i < files.length; i++) {
+			int checkLine = 0;
+			BufferedReader reader = new BufferedReader(new FileReader(files[i]));
+			String line;
+			System.out.println("Start merging csv files.(filename : " + files[i] + " )");
+			while ((line = reader.readLine()) != null) {
+				if (checkLine == 15) {
+					index = line + ",스타벅스가는시간(분),스타벅스가는거리(m)";
+				} else if (checkLine > 16) {
+					fullData.add(line);
+					String[] temp = line.split(",");
+					if(temp[2].equals("0")) {
+						listAddress.add(temp[0]+" "+temp[1]);
+					}else {
+					listAddress.add(temp[0]+" "+temp[1]+"-"+temp[2]);
+					}
+				}
+					
+				checkLine++;
+			}
+		}
+		System.out.println("csv file merge is complete.");
+	}
+
+	public void WriteFinalData(List<String> a) throws IOException {
+		System.out.println("Start writing data to the final csv file.");
+		File file = new File("C:\\Users\\user\\eclipse-workspace\\StarBucksProject\\csvdata\\FinalBackData.csv");
+		FileWriter fw = new FileWriter(file, true);
+		fw.write(index + "\n");
+		for (int i = 0; i < a.size(); i++) {
+			fw.write(a.get(i) + "\n");
+		}
+		fw.close();
+		System.out.println("The final csv file has been saved.");
+	}
+
+	public void WriteMergeData(List<String> a) throws IOException {
+		System.out.println("Start writing data to new csv file.");
+		File file = new File("C:\\Users\\user\\eclipse-workspace\\StarBucksProject\\csvdata\\MergeBackData.csv");
+		FileWriter fw = new FileWriter(file, true);
+		fw.write(index + "\n");
+		for (int i = 0; i < a.size(); i++) {
+			fw.write(a.get(i) + "\n");
+		}
+		fw.close();
+		System.out.println("The new csv file has been saved.");
+	}
+}
+
+#######################################################################################################################################################################
+
+#main s.code
+
+package Main;
+
+import java.io.IOException;
+import java.util.Iterator;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class Main {
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+		Data csvdata = new Data();
+		Crawling dataCrawling = new Crawling();
+		csvdata.ReadData();
+		csvdata.WriteMergeData(csvdata.fullData);
+		csvdata.WriteFinalData(dataCrawling.CrawlingData(csvdata));
+	}
+
+}
+
